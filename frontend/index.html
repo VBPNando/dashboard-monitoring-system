@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover: memanfaatkan area notch; safe-area di-handle lewat CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f5f7fa" />
+    <title>Dashboard Monitoring System</title>
+    <script>
+      // Terapkan tema tersimpan sebelum halaman tampil (mencegah kedip putih di tema gelap)
+      try { if (localStorage.getItem('dbmon.theme') === 'dark') document.documentElement.classList.add('dark'); } catch (e) {}
+    </script>
+  </head>
+  <body class="antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

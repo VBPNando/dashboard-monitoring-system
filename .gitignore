@@ -1,0 +1,29 @@
+# Dependensi & hasil build
+node_modules/
+dist/
+*.tsbuildinfo
+
+# DATA & RAHASIA — jangan pernah di-commit
+backend/data/
+data/
+.env
+.env.*
+!.env.example
+agent/agent-token.txt
+agent/agent.log
+agent/agent.old.log
+agent/node-path.txt
+agent/port.txt
+tools/node-path.txt
+tools/port.txt
+*.log
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+master.key
+admin-password.*
+
+# Lain-lain
+*.zip
+.DS_Store
+Thumbs.db

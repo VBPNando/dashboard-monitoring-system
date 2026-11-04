@@ -1,0 +1,62 @@
+# Jalankan aplikasi:            docker compose up -d --build
+# Jalankan + database demo:     docker compose --profile demo up -d --build
+# Lihat password login:         docker compose logs dbmon   (atau baca file di volume, lihat README)
+
+services:
+  dbmon:
+    build: .
+    image: dbmon:latest
+    restart: unless-stopped
+    ports:
+      - "${DBMON_PORT:-3000}:3000"
+    environment:
+      DBMON_ADMIN_PASSWORD: ${DBMON_ADMIN_PASSWORD:-}
+      DBMON_ALLOWED_HOSTS: ${DBMON_ALLOWED_HOSTS:-}
+      DBMON_INTERVAL_MS: ${DBMON_INTERVAL_MS:-1000}
+      DBMON_SECURE_COOKIE: ${DBMON_SECURE_COOKIE:-}
+      DBMON_TRUST_PROXY: ${DBMON_TRUST_PROXY:-}
+    volumes:
+      - dbmon-data:/app/data      # konfigurasi, master.key, admin-password.txt
+      - ./sqlite:/sqlite          # taruh file .db SQLite di folder ./sqlite
+    extra_hosts:
+      # Agar DB yang berjalan di komputer host bisa dicapai dengan host: host.docker.internal
+      - "host.docker.internal:host-gateway"
+
+  # ---------------- Database demo (opsional, profil "demo") ----------------
+  # Di form gunakan: Host demo-mariadb / demo-postgres, user root / postgres, password demo123
+  demo-mariadb:
+    image: mariadb:11
+    profiles: [demo]
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: demo123
+
+  demo-postgres:
+    image: postgres:17
+    profiles: [demo]
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: demo123
+    command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements"]
+    volumes:
+      - ./demo/pg-init.sql:/docker-entrypoint-initdb.d/pg-init.sql:ro
+
+  # Generator trafik supaya grafik demo bergerak
+  demo-load-mariadb:
+    image: mariadb:11
+    profiles: [demo]
+    restart: unless-stopped
+    depends_on: [demo-mariadb]
+    entrypoint: ["sh", "-c", "while true; do mariadb -h demo-mariadb -uroot -pdemo123 -e 'SELECT SLEEP(0.02)' >/dev/null 2>&1 || sleep 2; done"]
+
+  demo-load-postgres:
+    image: postgres:17
+    profiles: [demo]
+    restart: unless-stopped
+    depends_on: [demo-postgres]
+    environment:
+      PGPASSWORD: demo123
+    entrypoint: ["sh", "-c", "while true; do psql -h demo-postgres -U postgres -qc 'SELECT pg_sleep(0.02)' >/dev/null 2>&1 || sleep 2; done"]
+
+volumes:
+  dbmon-data:

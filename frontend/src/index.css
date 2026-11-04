@@ -1,0 +1,135 @@
+@import "tailwindcss";
+
+/* Warna teks di atas tombol/chip berwarna: putih di kedua tema */
+@theme {
+  --color-onaccent: #ffffff;
+}
+
+/* ───────── Tema ─────────
+   Komponen memakai kelas Tailwind biasa (bg-white, text-slate-900, ...). Di tema gelap, skala
+   warna tersebut dipetakan ulang lewat variabel CSS, sehingga semua komponen ikut berganti
+   tanpa kelas "dark:" di setiap elemen. */
+:root {
+  color-scheme: light;
+  --canvas: #f5f7fa;
+  --glow-a: #eef4ff;
+  --glow-b: #f1f7f4;
+}
+:root.dark {
+  color-scheme: dark;
+  --canvas: #070b14;
+  --glow-a: #0d1a33;
+  --glow-b: #0a1d1a;
+
+  /* Permukaan & teks (skala slate dibalik) */
+  --color-white: #111a2b;
+  --color-slate-50: #0c1424;
+  --color-slate-100: #172238;
+  --color-slate-200: #223049;
+  --color-slate-300: #31405c;
+  --color-slate-400: #7d8ba3;
+  --color-slate-500: #9aa8bd;
+  --color-slate-600: #b7c3d4;
+  --color-slate-700: #cfd8e5;
+  --color-slate-800: #e3e9f2;
+  --color-slate-900: #f3f6fa;
+
+  /* Chip/latar berwarna lembut → versi gelap; teks berwarna → versi terang */
+  --color-sky-50: #0e2a44;
+  --color-sky-100: #12385a;
+  --color-sky-200: #1b4d78;
+  --color-sky-700: #7cc4f5;
+  --color-sky-800: #a6d8fa;
+  --color-rose-50: #3a1420;
+  --color-rose-200: #6a2335;
+  --color-rose-600: #f0627a;
+  --color-rose-700: #f58b9c;
+  --color-rose-800: #f9b3bf;
+  --color-amber-50: #36260a;
+  --color-amber-200: #6b4b10;
+  --color-amber-800: #f6cd6b;
+  --color-emerald-50: #0c2e22;
+  --color-emerald-200: #155e44;
+  --color-emerald-700: #5fd3a5;
+  --color-emerald-800: #8fe3c1;
+}
+
+/* Latar dengan gradasi sangat halus */
+body {
+  background:
+    radial-gradient(1200px 600px at 0% 0%, var(--glow-a) 0%, transparent 60%),
+    radial-gradient(1000px 500px at 100% 100%, var(--glow-b) 0%, transparent 55%),
+    var(--canvas);
+  color: var(--color-slate-900);
+  transition: background-color 300ms ease;
+}
+
+/* Padding aman untuk HP ber-notch / home indicator */
+.safe-x { padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right)); }
+.safe-b { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+
+/* Angka metrik tidak "goyang" lebarnya saat berubah */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Kartu muncul lembut (fade + naik sedikit) */
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.995); }
+  to   { opacity: 1; transform: none; }
+}
+.card-in { animation: card-in 600ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.card-in:nth-child(2) { animation-delay: 60ms; }
+.card-in:nth-child(3) { animation-delay: 120ms; }
+.card-in:nth-child(4) { animation-delay: 180ms; }
+.card-in:nth-child(n + 5) { animation-delay: 240ms; }
+
+/* Lembar form muncul dari bawah (HP) / membesar (desktop) */
+@keyframes sheet-in {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: none; }
+}
+.sheet-in { animation: sheet-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.fade-in { animation: fade-in 250ms ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .card-in, .sheet-in, .fade-in { animation: none; }
+}
+
+/* Baris daftar muncul lembut */
+@keyframes row-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+.row-in { animation: row-in 320ms ease-out both; }
+
+/* Titik terbaru sparkline berdenyut pelan */
+@keyframes spark-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.spark-dot { animation: spark-pulse 2.4s ease-in-out infinite; }
+
+/* KPI sedikit terangkat saat disorot */
+.kpi { transition: box-shadow 200ms ease, transform 200ms ease; }
+.kpi:hover { box-shadow: 0 8px 20px -12px rgba(15, 23, 42, 0.25); transform: translateY(-1px); }
+
+/* Scrollbar tipis untuk daftar di dalam panel */
+.thin-scroll { scrollbar-width: thin; scrollbar-color: var(--color-slate-300) transparent; }
+.thin-scroll::-webkit-scrollbar { width: 6px; }
+.thin-scroll::-webkit-scrollbar-thumb { background: var(--color-slate-300); border-radius: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .row-in, .spark-dot { animation: none; }
+  .kpi:hover { transform: none; }
+}
+
+/* KPI sempit (6 kotak per baris di panel kecil): angka di atas, sparkline di bawah selebar kotak */
+.kpi { container-type: inline-size; }
+@container (max-width: 165px) {
+  .kpi-row { flex-direction: column; align-items: stretch; gap: 2px; }
+  .kpi-val { font-size: 20px; line-height: 26px; white-space: nowrap; }
+  .kpi-spark { flex: none; height: 18px; margin-bottom: 0; }
+}
+
+/* ───────── Cetak laporan (tab Laporan → Cetak / Simpan PDF) ───────── */
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff !important; }
+  .report-card { break-inside: avoid; }
+  .report article > * { box-shadow: none !important; }
+  @page { margin: 12mm; }
+}
