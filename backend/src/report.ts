@@ -3,6 +3,7 @@ import * as store from './store.js';
 import * as history from './history.js';
 import * as devHistory from './deviceHistory.js';
 import * as ispStore from './sources/ispStore.js';
+import * as threatStore from './sources/threatStore.js';
 import { alertsBetween, type LoggedAlert } from './alertLog.js';
 import type { DeviceManager } from './devices.js';
 
@@ -80,6 +81,7 @@ const DEVICE_KEYS: Record<string, Record<string, Def>> = {
     rx: { label: 'Download WAN', unit: 'B/s' },
     tx: { label: 'Upload WAN', unit: 'B/s' },
     wanUp: { label: 'Link WAN hidup', unit: '' },
+    threats: { label: 'Serangan per menit', unit: '' },
   },
   mikrotik: {
     cpu: { label: 'CPU', unit: '%' },
@@ -201,6 +203,7 @@ export function registerReports(app: FastifyInstance, devices: DeviceManager) {
         out.slaTarget = c.options?.slaTarget ?? 99.5;
         out.incidents = ispStore.incidentsBetween(c.id, from, to);
       }
+      if (c.engine === 'fortigate') out.threats = threatStore.periodSummary(c.id, from, to);
       return out;
     });
     return { from, to, generatedAt: Date.now(), sources };
@@ -283,6 +286,18 @@ export function registerReports(app: FastifyInstance, devices: DeviceManager) {
             out.push('', line(['Gangguan ISP', 'Mulai', 'Selesai', 'Durasi (menit)', 'Keterangan']));
             for (const i of inc) out.push(line(['', fmtTime(i.start), i.end ? fmtTime(i.end) : 'masih berlangsung', num(i.durationMs / MIN), i.reason ?? '']));
           }
+        }
+      }
+
+      if (c.engine === 'fortigate') {
+        const t = threatStore.periodSummary(c.id, from, to);
+        if (t.n) {
+          out.push('', line(['Serangan (log FortiGate)', 'Total', 'Diblokir', 'Kritis', 'Tinggi', 'Keluar (perangkat kantor)']));
+          out.push(line(['', t.n, t.blocked, t.critical, t.high, t.outbound]));
+          out.push('', line(['Negara penyerang teratas', 'Jumlah']));
+          for (const r of t.topCountries) out.push(line([r.k, r.n]));
+          out.push('', line(['Jenis serangan teratas', 'Jumlah']));
+          for (const r of t.topAttacks) out.push(line([r.k, r.n]));
         }
       }
 

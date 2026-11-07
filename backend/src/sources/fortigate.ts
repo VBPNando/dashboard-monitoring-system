@@ -1,4 +1,6 @@
 import { HttpError, requestJson } from '../http.js';
+import { ThreatCollector } from './fortiThreats.js';
+import * as threatStore from './threatStore.js';
 import { level, r1, type Check, type DeviceConfig, type DeviceSample, type DeviceSource } from './types.js';
 
 interface FgResp<T> {
@@ -61,9 +63,19 @@ export class FortiGateSource implements DeviceSource {
   private roles: { ts: number; map: Map<string, { role?: string; alias?: string; type?: string }> } | null = null;
   private everUp = new Set<string>();
 
+  private threats: ThreatCollector;
+
   constructor(private cfg: DeviceConfig) {
     const scheme = cfg.options.https === false ? 'http' : 'https';
     this.base = `${scheme}://${cfg.host}:${cfg.port ?? 443}/api/v2`;
+    // Log ancaman: kesalahan HTTP diteruskan apa adanya (kode status dipakai untuk mencari path log)
+    this.threats = new ThreatCollector(cfg.id, (path) => {
+      const vdom = cfg.options.vdom?.trim();
+      const sep = path.includes('?') ? '&' : '?';
+      return requestJson(`${this.base}${path}${vdom ? `${sep}vdom=${encodeURIComponent(vdom)}` : ''}`, {
+        headers: { Authorization: `Bearer ${cfg.password ?? ''}` },
+      });
+    });
   }
 
   private async get<T>(path: string): Promise<FgResp<T>> {
@@ -97,7 +109,7 @@ export class FortiGateSource implements DeviceSource {
     const r = await this.get<{ name: string; role?: string; alias?: string; type?: string }[]>(
       '/cmdb/system/interface?format=name|role|alias|type',
     ).catch(() => null);
-    const map = new Map((r?.results ?? []).map((i) => [i.name, { role: i.role, alias: i.alias, type: i.type }]));
+    const map = new Map((Array.isArray(r?.results) ? r.results : []).map((i) => [i.name, { role: i.role, alias: i.alias, type: i.type }]));
     this.roles = { ts: Date.now(), map };
     return map;
   }
@@ -177,7 +189,7 @@ export class FortiGateSource implements DeviceSource {
     const sumOf = (k: 'rxBps' | 'txBps') => (wans.some((w) => w[k] != null) ? r1(wans.reduce((a, w) => a + (w[k] ?? 0), 0)) : null);
 
     // ── Tunnel IPsec ──
-    const tunnels = (vpn?.results ?? []).map((t) => {
+    const tunnels = (Array.isArray(vpn?.results) ? vpn.results : []).map((t) => {
       const p2 = t.proxyid ?? [];
       const up = p2.filter((p) => p.status === 'up').length;
       return { name: t.name, remote: t.rgwy ?? '', up, total: p2.length, rxBytes: num(t.incoming_bytes), txBytes: num(t.outgoing_bytes) };
@@ -228,11 +240,52 @@ export class FortiGateSource implements DeviceSource {
       hit: vpnDown.length ? { severity: 'warning', title: `${vpnDown.length} tunnel VPN putus`, message: vpnDown.map((t) => t.name).join(', ') } : null,
     });
 
+    // ── Peta serangan (log IPS / DoS / antivirus) ──
+    const threatsOn = this.cfg.options.threats !== false;
+    let threatData: Record<string, unknown> | null = null;
+    if (threatsOn) {
+      await this.threats.tick().catch(() => {});
+      const now = Date.now();
+      const st = this.threats.status;
+      threatData = {
+        ...st,
+        site: { lat: this.cfg.options.siteLat ?? -6.2, lon: this.cfg.options.siteLon ?? 106.82, label: this.cfg.options.siteLabel || 'Kantor' },
+        ...threatStore.summary(this.cfg.id, now - 86400_000),
+      };
+      if (st.ok) {
+        const unblocked = threatStore.recentRows(this.cfg.id, now - 15 * 60_000, "dir = 'in' AND blocked = 0 AND severity IN ('critical','high')");
+        checks.push({
+          rule: 'fg_threat_unblocked',
+          clearAfter: 1,
+          hit: unblocked.length
+            ? { severity: 'critical', title: `Serangan berbahaya TIDAK diblokir (${unblocked.reduce((a, r) => a + r.n, 0)}×)`, message: unblocked.map((r) => `${r.name} dari ${r.remoteIp}${r.country ? ` (${r.country})` : ''} → ${r.localIp}`).join(' · ') }
+            : null,
+        });
+        const infected = threatStore.recentRows(this.cfg.id, now - 30 * 60_000, "dir = 'out' AND severity IN ('critical','high')");
+        checks.push({
+          rule: 'fg_infected',
+          clearAfter: 1,
+          hit: infected.length
+            ? { severity: 'critical', title: `Perangkat kantor terindikasi malware/botnet: ${[...new Set(infected.map((r) => r.localIp))].slice(0, 3).join(', ')}`, message: infected.map((r) => `${r.localIp} → ${r.remoteIp} (${r.name})`).join(' · ') }
+            : null,
+        });
+        const burst = threatStore.recentCount(this.cfg.id, now - 10 * 60_000, "dir = 'in'");
+        const limit = this.cfg.options.threatSpike ?? 300;
+        checks.push({
+          rule: 'fg_threat_spike',
+          raiseAfter: 1,
+          clearAfter: 3,
+          hit: burst >= limit ? { severity: 'warning', title: `Lonjakan serangan: ${burst} dalam 10 menit`, message: 'Lihat Peta Serangan untuk asal & jenisnya' } : null,
+        });
+      }
+    }
+
     return {
       series: {
         cpu: cpuPct,
         mem: memPct,
         sessions,
+        ...(threatsOn ? { threats: this.threats.status.perMinute } : {}),
         rx: sumOf('rxBps'),
         tx: sumOf('txBps'),
         wanUp: sla.length ? members.size - downMembers.length : wans.filter((w) => w.link).length,
@@ -249,6 +302,7 @@ export class FortiGateSource implements DeviceSource {
         interfaces: others,
         sla,
         tunnels,
+        threats: threatData,
       },
       checks,
     };

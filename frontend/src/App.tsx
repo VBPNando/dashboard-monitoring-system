@@ -9,6 +9,7 @@ import {
   type Connection,
   type DevicePoint,
   type FortiData,
+  type FortiThreats,
   type HistoryPoint,
   type IspData,
   type MikrotikData,
@@ -26,6 +27,7 @@ import { AgentDialog } from './components/AgentDialog';
 import { RawDialog } from './components/RawDialog';
 import { Overview } from './components/Overview';
 import { ReportView } from './components/ReportView';
+import { ThreatView } from './components/ThreatView';
 import { SettingsDialog } from './components/SettingsDialog';
 import { AbbPanel, FortiPanel, IspPanel, MikrotikPanel, NasPanel, PbsPanel, ProxmoxPanel, type DevicePanelProps } from './components/DevicePanels';
 import { ThemeToggle } from './theme';
@@ -92,6 +94,8 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [tab, setTab] = useState<Tab>(() => readPref<Tab>('dbmon.tab', 'overview'));
   const [filter, setFilter] = useState<string>('all');
   const [range, setRange] = useState<RangeKey>(() => readPref<RangeKey>('dbmon.range', 'live'));
+  /** Tab Firewall: tampilan status perangkat atau Peta Serangan */
+  const [fgView, setFgView] = useState<'status' | 'threats'>(() => readPref<'status' | 'threats'>('dbmon.fgView', 'status'));
 
   const sources = useMemo(() => conns.map((c) => ({ id: c.id, engine: c.engine })), [conns]);
   const { live, devLive, devData, status, details, alerts } = useMetrics(sources);
@@ -116,6 +120,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   };
 
   const inTab = current === 'overview' || current === 'report' ? [] : conns.filter((c) => categoryOf(c.engine) === current);
+  const threatsView = current === 'fortigate' && fgView === 'threats';
   const visible = filter === 'all' ? inTab : inTab.filter((c) => c.id === filter);
   useEffect(() => {
     if (filter !== 'all' && !inTab.some((c) => c.id === filter)) setFilter('all');
@@ -246,7 +251,27 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                 ))}
               </select>
             )}
-            {current !== 'overview' && current !== 'report' && !(current === 'abb' && inTab.every((c) => c.engine === 'abb')) && (
+            {current === 'fortigate' && (
+              <div className="flex rounded-xl bg-slate-100 p-0.5 text-[13px] font-medium" role="tablist" aria-label="Tampilan firewall">
+                {(
+                  [
+                    ['status', '📊 Status'],
+                    ['threats', '🛡 Peta Serangan'],
+                  ] as const
+                ).map(([k, label]) => (
+                  <button
+                    key={k}
+                    role="tab"
+                    aria-selected={fgView === k}
+                    onClick={() => (setFgView(k), writePref('dbmon.fgView', k))}
+                    className={`rounded-lg px-3 py-1 transition ${fgView === k ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+            {current !== 'overview' && current !== 'report' && !threatsView && !(current === 'abb' && inTab.every((c) => c.engine === 'abb')) && (
               <select
                 className={select}
                 value={range}
@@ -335,6 +360,21 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       ) : current === 'report' ? (
         <main className="safe-x py-4 pb-28 sm:pb-8 print:p-0">
           <ReportView conns={conns} />
+        </main>
+      ) : threatsView ? (
+        <main
+          className={wall ? 'grid min-h-0 flex-1 gap-3 overflow-y-auto p-3' : 'safe-x mx-auto grid max-w-[1600px] gap-4 py-4 pb-28 sm:pb-8'}
+          style={wall ? { gridAutoRows: visible.length === 1 ? 'minmax(0, 1fr)' : 'minmax(calc(100dvh - 7rem), auto)' } : undefined}
+        >
+          {visible.map((c) => (
+            <ThreatView
+              key={c.id}
+              conn={c}
+              data={(devData[c.id]?.data as FortiData | undefined)?.threats as FortiThreats | null | undefined}
+              alerts={alerts[c.id]?.active ?? []}
+              fill={wall && visible.length === 1}
+            />
+          ))}
         </main>
       ) : current === 'overview' ? (
         <main className={wall ? 'min-h-0 flex-1 p-3' : 'safe-x mx-auto max-w-[1600px] py-4 pb-28 sm:pb-8'}>

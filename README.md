@@ -136,7 +136,7 @@ dan seluruh alert aktif. Tombol ☀/☾ di kanan atas mengganti tema terang/gela
 | **Proxmox Backup Server** | API token: Configuration → Access Control → API Token → Add, lalu Permissions → Add → **API Token Permission** path `/` role **Audit**. Isi Token ID `user@pbs!nama` + secret. Port 8007. Tampil di tab **Backup**. | CPU, RAM, datastore (% terisi & perkiraan penuh), backup terakhir tiap VM/CT, tugas 24 jam (backup, verifikasi, prune, GC, sync); alert backup gagal, VM/CT tidak dibackup > 26 jam, tugas gagal, datastore penuh |
 | **NAS Synology** | Akun khusus anggota grup **administrators**, **tanpa 2FA**. Port 5001 (https) / 5000 (http). | CPU, RAM, jaringan, volume & storage pool, disk (status, S.M.A.R.T., suhu); alert volume degraded/penuh, disk bermasalah/panas |
 | **Active Backup for Business** | Akun NAS yang sama (login dipakai bersama dengan panel NAS). | Semua tugas backup: hasil terakhir (sukses/sebagian/gagal/berjalan), waktu, durasi, data, perangkat offline; alert gagal & tidak backup > 26 jam |
-| **FortiGate** | REST API Admin: System → Administrators → Create New → **REST API Admin**, profil hanya-baca, **Trusted Hosts** = IP komputer Dashboard. Isi API key. Port HTTPS admin (bawaan 443). VDOM opsional. | CPU, memory, sesi, trafik WAN, **latency/jitter/loss per ISP dari SD-WAN Performance SLA**, interface, tunnel IPsec; alert link WAN putus, SLA tidak terpenuhi, VPN putus, CPU/memory tinggi |
+| **FortiGate** | REST API Admin: System → Administrators → Create New → **REST API Admin**, profil hanya-baca (termasuk **Log & Report: Read** untuk Peta Serangan), **Trusted Hosts** = IP komputer Dashboard. Isi API key. Port HTTPS admin (bawaan 443). VDOM opsional. | CPU, memory, sesi, trafik WAN, **latency/jitter/loss per ISP dari SD-WAN Performance SLA**, interface, tunnel IPsec, **🛡 Peta Serangan** (serangan masuk & perangkat kantor yang terinfeksi, dari log IPS/DoS/antivirus); alert link WAN putus, SLA tidak terpenuhi, VPN putus, serangan lolos, PC terinfeksi, CPU/memory tinggi |
 | **MikroTik** | RouterOS **v7.1+** (REST API). Aktifkan IP → Services → **www** (port 80) atau **www-ssl** (443), batasi *Available From* ke IP Dashboard, buat user grup **read**. | CPU, memory, suhu, trafik WAN, **jalur ISP aktif (default route) & failover**, Netwatch, interface, klien DHCP; alert WAN putus, failover, Netwatch down, suhu/CPU tinggi |
 | **ISP (SLA)** | IP yang mewakili link (gateway/modem ISP atau IP publik link), bisa di-ping dari komputer Dashboard Monitoring System. Target SLA, mis. 99,5%. | Ping tiap 10 dtk: status UP/DOWN, latency, jitter, packet loss; uptime 24 jam/7 hari/30 hari/bulan ini/bulan lalu, sisa jatah downtime, riwayat gangguan |
 
@@ -155,6 +155,27 @@ Catatan:
 - **MikroTik dual ISP**: beri *comment* pada default route (mis. `ISP-A`) agar nama jalur tampil rapi;
   route dengan distance terkecil dianggap jalur utama, dan alert failover muncul bila route cadangan yang aktif.
 - Proxmox, Synology, FortiGate & MikroTik (www-ssl) memakai sertifikat self-signed bawaan → diterima otomatis (hanya untuk koneksi itu).
+
+---
+
+## 🛡 Peta Serangan (FortiGate)
+
+![Peta Serangan](docs/img/peta-serangan.png)
+
+Tab **Firewall → 🛡 Peta Serangan** menampilkan serangan **nyata ke jaringan kantor** (bukan data global),
+diambil dari log FortiGate setiap 30 detik:
+
+- Peta dunia dengan garis serangan beranimasi dari **negara asal** ke kantor (warna = tingkat bahaya).
+- Daftar **real-time**: jam, nama serangan, ×jumlah, tingkat, negara & IP asal → server tujuan, diblokir/lolos.
+- Filter **Serangan masuk / Keluar (malware/botnet dari PC kantor) / Semua**.
+- Peringkat negara penyerang, jenis serangan, server paling diserang, PC terindikasi.
+- Alert: serangan kritis/tinggi **tidak diblokir**, **PC kantor terindikasi malware/botnet**, lonjakan serangan.
+- Riwayat 90 hari, ikut masuk laporan (PDF & CSV).
+
+Syarat di FortiGate: profil admin API **Log & Report: Read**, logging ke **Disk** atau **Memory**, dan
+**IPS** (plus Antivirus bila berlisensi) aktif di policy internet → server kantor dan LAN → internet dengan
+*Log Allowed Traffic: Security Events*. Lokasi negara berasal dari database GeoIP FortiGate (tingkat negara).
+Peta dunia: data public domain dari [world.geo.json](https://github.com/johan/world.geo.json), dibundel di aplikasi (tanpa internet).
 
 ---
 

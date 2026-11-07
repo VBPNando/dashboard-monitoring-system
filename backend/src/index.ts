@@ -103,7 +103,18 @@ const FortiConn = z.object({
   port: port.optional(),
   // REST API key (System → Administrators → REST API Admin)
   password: z.string().trim().min(1, 'API key wajib diisi').max(200),
-  options: z.object({ https, vdom: z.string().trim().max(60).optional() }).optional().default({}),
+  options: z
+    .object({
+      https,
+      vdom: z.string().trim().max(60).optional(),
+      threats: z.boolean().optional(),
+      siteLat: z.coerce.number().min(-60).max(85).optional(),
+      siteLon: z.coerce.number().min(-180).max(180).optional(),
+      siteLabel: z.string().trim().max(40).optional(),
+      threatSpike: z.coerce.number().int().min(10).max(100000).optional(),
+    })
+    .optional()
+    .default({}),
 });
 const MikrotikConn = z.object({
   engine: z.literal('mikrotik'),

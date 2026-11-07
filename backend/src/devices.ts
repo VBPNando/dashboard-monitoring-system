@@ -9,6 +9,7 @@ import { IspSource } from './sources/isp.js';
 import { FortiGateSource } from './sources/fortigate.js';
 import { MikrotikSource } from './sources/mikrotik.js';
 import { PbsSource } from './sources/pbs.js';
+import * as threatStore from './sources/threatStore.js';
 import * as ispStore from './sources/ispStore.js';
 import type { DeviceConfig, DeviceKind, DeviceSource } from './sources/types.js';
 
@@ -142,6 +143,7 @@ export class DeviceManager extends EventEmitter {
     this.alerts.forget(id);
     hist.forget(id);
     if (kind === 'isp') ispStore.forget(id);
+    if (kind === 'fortigate') threatStore.forget(id);
   }
 
   has(id: string) {

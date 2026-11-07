@@ -16,6 +16,11 @@ export interface DeviceOptions {
   latencyWarnMs?: number;
   staleHours?: number;
   vdom?: string;
+  threats?: boolean;
+  siteLat?: number;
+  siteLon?: number;
+  siteLabel?: string;
+  threatSpike?: number;
 }
 export type ConnStatus = 'connecting' | 'up' | 'error';
 
@@ -302,6 +307,44 @@ export interface FortiData {
   interfaces: FortiIface[];
   sla: { sla: string; iface: string; status: string; latencyMs: number | null; jitterMs: number | null; lossPct: number | null; slaMet: boolean | null; since: number | null }[];
   tunnels: { name: string; remote: string; up: number; total: number; rxBytes: number | null; txBytes: number | null }[];
+  /** Peta serangan (null bila dimatikan) */
+  threats?: FortiThreats | null;
+}
+
+export type ThreatDir = 'in' | 'out' | 'lan';
+export interface ThreatRow {
+  ts: number;
+  kind: 'IPS' | 'DoS' | 'Malware';
+  dir: ThreatDir;
+  name: string;
+  severity: string;
+  blocked: number;
+  action: string;
+  remoteIp: string;
+  country: string;
+  localIp: string;
+  port: number | null;
+  count: number;
+}
+export interface ThreatTop {
+  k: string;
+  n: number;
+  sev: number;
+}
+export interface FortiThreats {
+  ok: boolean;
+  message: string | null;
+  device: string | null;
+  lastFetch: number | null;
+  perMinute: number | null;
+  site: { lat: number; lon: number; label: string };
+  totals: { dir: ThreatDir; severity: string; blocked: number; n: number }[];
+  topCountries: ThreatTop[];
+  topAttacks: ThreatTop[];
+  topTargets: ThreatTop[];
+  infected: ThreatTop[];
+  countries: { dir: ThreatDir; country: string; n: number; sev: number; last: number }[];
+  recent: ThreatRow[];
 }
 
 export interface MikrotikIface {

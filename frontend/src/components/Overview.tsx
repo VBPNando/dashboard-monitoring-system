@@ -443,11 +443,21 @@ function FortiTile(p: TileProps & { points: DevicePoint[]; d?: FortiData }) {
           { label: 'Memory', value: pct(v.mem), tone: lvl(v.mem, 80, 90) },
           ...(links.length ? links : [{ label: 'Link WAN', value: '—' }]),
           { label: 'Trafik WAN', value: bps(v.rx, v.tx) },
-          { label: 'Sesi', value: fmtNum(v.sessions) },
+          threatItem(d) ?? { label: 'Sesi', value: fmtNum(v.sessions) },
         ]}
       />
     </Tile>
   );
+}
+
+/** Serangan masuk 24 jam (bila Peta Serangan aktif); merah bila ada yang lolos tidak diblokir */
+function threatItem(d?: FortiData): M | null {
+  const t = d?.threats;
+  if (!t?.ok) return null;
+  const inbound = t.totals.filter((r) => r.dir === 'in');
+  const n = inbound.reduce((a, r) => a + r.n, 0);
+  const leaked = inbound.some((r) => !r.blocked && (r.severity === 'critical' || r.severity === 'high'));
+  return { label: 'Serangan 24j', value: fmtNum(n), tone: leaked || t.infected.length ? STATUS.critical : n ? STATUS.warning : undefined };
 }
 
 /** MikroTik: tiap default route (ISP) tampil sebagai satu angka: aktif / siaga / putus */

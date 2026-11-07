@@ -125,9 +125,21 @@ Selalu gunakan **akun khusus monitoring yang hanya-baca**.
 | **Proxmox VE** | API Token (hapus centang *Privilege Separation*) + role **PVEAuditor** di `/`. Port 8006 |
 | **Proxmox Backup Server** | API Token + **API Token Permission** role **Audit** di `/`. Token ID `user@pbs!nama`. Port 8007 |
 | **NAS Synology / Active Backup** | Akun grup administrators **tanpa 2FA**. Port 5001 |
-| **FortiGate** | REST API Admin, profil read-only, **PKI Group dimatikan**, Trusted Hosts = subnet dashboard. Isi API key |
+| **FortiGate** | REST API Admin, profil read-only (+ **Log & Report: Read** untuk Peta Serangan), **PKI Group dimatikan**, Trusted Hosts = subnet dashboard. Isi API key |
 | **MikroTik** | RouterOS **v7.1+**, aktifkan service `www`, user grup `read`. Beri *comment* pada default route tiap ISP |
 | **ISP / SLA** | IP yang di-ping per ISP. Dua ISP di belakang firewall → target berbeda + Policy Route per ISP |
+
+### Peta Serangan FortiGate
+
+![Peta Serangan](img/peta-serangan.png)
+
+Buka tab **Firewall → 🛡 Peta Serangan**. Agar terisi, di FortiGate:
+
+1. **System → Admin Profiles** → profil admin API → **Log & Report: Read**.
+2. **Log & Report → Log Settings** → log ke **Disk** (bila ada) atau **Memory**.
+3. **Policy & Objects → Firewall Policy**: di policy internet → server kantor (VIP/port-forward) dan LAN → internet,
+   aktifkan **IPS** (dan Antivirus bila berlisensi) + **Log Allowed Traffic: Security Events**.
+4. Tunggu ±1 menit.
 
 Langkah lengkap dengan gambar menu tiap perangkat ada di **[Panduan PDF](Panduan-Dashboard-Monitoring-System.pdf)** (Bab 4, 6, 7).
 

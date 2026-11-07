@@ -18,6 +18,14 @@ export interface DeviceOptions {
   staleHours?: number;
   /** FortiGate: VDOM (kosong = root/bawaan) */
   vdom?: string;
+  /** FortiGate: tampilkan Peta Serangan dari log IPS/DoS/antivirus (bawaan true) */
+  threats?: boolean;
+  /** FortiGate: lokasi kantor di peta serangan */
+  siteLat?: number;
+  siteLon?: number;
+  siteLabel?: string;
+  /** FortiGate: alert lonjakan bila serangan masuk ≥ angka ini dalam 10 menit (bawaan 300) */
+  threatSpike?: number;
 }
 
 export interface DeviceConfig {

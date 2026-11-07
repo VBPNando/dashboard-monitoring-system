@@ -16,6 +16,26 @@ const GROUPS: { label: string; items: Engine[] }[] = [
 ];
 
 /** Petunjuk singkat per jenis: akun/izin yang dibutuhkan */
+/** Kota untuk titik kantor di Peta Serangan */
+const CITIES = [
+  { name: 'Jakarta', lat: -6.2, lon: 106.82 },
+  { name: 'Surabaya', lat: -7.25, lon: 112.75 },
+  { name: 'Bandung', lat: -6.91, lon: 107.61 },
+  { name: 'Semarang', lat: -6.97, lon: 110.42 },
+  { name: 'Yogyakarta', lat: -7.8, lon: 110.36 },
+  { name: 'Malang', lat: -7.98, lon: 112.63 },
+  { name: 'Denpasar', lat: -8.65, lon: 115.22 },
+  { name: 'Medan', lat: 3.6, lon: 98.67 },
+  { name: 'Palembang', lat: -2.98, lon: 104.76 },
+  { name: 'Pekanbaru', lat: 0.51, lon: 101.45 },
+  { name: 'Balikpapan', lat: -1.24, lon: 116.85 },
+  { name: 'Makassar', lat: -5.15, lon: 119.43 },
+  { name: 'Manado', lat: 1.47, lon: 124.84 },
+  { name: 'Jayapura', lat: -2.53, lon: 140.72 },
+  { name: 'Singapura', lat: 1.35, lon: 103.82 },
+  { name: 'Kuala Lumpur', lat: 3.14, lon: 101.69 },
+];
+
 const HELP: Partial<Record<Engine, ReactNode>> = {
   proxmox: (
     <>
@@ -44,7 +64,7 @@ const HELP: Partial<Record<Engine, ReactNode>> = {
   ),
   fortigate: (
     <>
-      Buat <b>System → Administrators → Create New → REST API Admin</b> dengan profil admin <b>read-only</b>, isi <b>Trusted Hosts</b> dengan IP
+      Buat <b>System → Administrators → Create New → REST API Admin</b> dengan profil admin <b>read-only</b> (System, Network, VPN, <b>Log &amp; Report</b>: Read), isi <b>Trusted Hosts</b> dengan IP
       komputer Dashboard, lalu salin API key yang muncul. Latency/loss per ISP diambil dari <b>SD-WAN Performance SLA</b> (bila
       dipakai). Port = port HTTPS admin FortiGate (bawaan 443).
     </>
@@ -88,6 +108,10 @@ export function ConnectionForm({ onCreated, onClose, initial = 'mariadb' }: Prop
     latencyWarnMs: '100',
     staleHours: '26',
     vdom: '',
+    threats: true,
+    site: 'Jakarta',
+    siteLat: '',
+    siteLon: '',
   });
   const [busy, setBusy] = useState<'test' | 'save' | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -143,7 +167,19 @@ export function ConnectionForm({ onCreated, onClose, initial = 'mariadb' }: Prop
           host: form.host,
           port: Number(form.port) || undefined,
           password: form.password,
-          options: { https: form.https, vdom: form.vdom || undefined },
+          options: {
+            https: form.https,
+            vdom: form.vdom || undefined,
+            threats: form.threats,
+            ...(() => {
+              const c = CITIES.find((x) => x.name === form.site);
+              const lat = c ? c.lat : Number(form.siteLat);
+              const lon = c ? c.lon : Number(form.siteLon);
+              return Number.isFinite(lat) && Number.isFinite(lon) && (c || (form.siteLat && form.siteLon))
+                ? { siteLat: lat, siteLon: lon, siteLabel: c ? `Kantor ${c.name}` : 'Kantor' }
+                : {};
+            })(),
+          },
         };
       case 'mikrotik':
         return {
@@ -327,6 +363,30 @@ export function ConnectionForm({ onCreated, onClose, initial = 'mariadb' }: Prop
                 <>
                   <input className={input} type="password" placeholder="API key (REST API Admin)" value={form.password} onChange={set('password')} autoComplete="new-password" spellCheck={false} required />
                   <input className={input} placeholder="VDOM (opsional, kosong = root)" value={form.vdom} onChange={set('vdom')} autoCapitalize="off" />
+                  <label className="flex items-center gap-2 px-1 text-sm text-slate-700">
+                    <input type="checkbox" checked={form.threats} onChange={(e) => setForm((f) => ({ ...f, threats: e.target.checked }))} className="h-4 w-4 accent-sky-600" />
+                    Tampilkan <b>Peta Serangan</b> (log IPS, DoS &amp; antivirus; butuh hak baca Log &amp; Report)
+                  </label>
+                  {form.threats && (
+                    <div className="grid grid-cols-[auto_1fr] items-center gap-2 px-1 text-sm text-slate-600">
+                      <span>Lokasi kantor di peta</span>
+                      <select className={input} value={form.site} onChange={set('site')}>
+                        {CITIES.map((c) => (
+                          <option key={c.name}>{c.name}</option>
+                        ))}
+                        <option value="custom">Koordinat lain…</option>
+                      </select>
+                      {form.site === 'custom' && (
+                        <>
+                          <span />
+                          <span className="grid grid-cols-2 gap-2">
+                            <input className={input} inputMode="decimal" placeholder="Lintang, mis. -7.25" value={form.siteLat} onChange={set('siteLat')} />
+                            <input className={input} inputMode="decimal" placeholder="Bujur, mis. 112.75" value={form.siteLon} onChange={set('siteLon')} />
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
               {isDb && <input className={input} placeholder="Database (opsional)" value={form.database} onChange={set('database')} autoCapitalize="off" />}
