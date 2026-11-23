@@ -1,7 +1,7 @@
 # Dashboard Monitoring System
 
 Aplikasi web untuk memantau **database** (MariaDB, PostgreSQL, SQL Server, SQLite), **server Proxmox VE**, **Proxmox Backup Server**,
-**NAS Synology**, **Active Backup for Business**, **FortiGate**, **MikroTik**, dan **SLA ISP** secara real-time, dengan tema terang/gelap,
+**NAS Synology**, **NAS QNAP**, **Active Backup for Business**, **FortiGate**, **MikroTik**, dan **SLA ISP** secara real-time, dengan tema terang/gelap,
 tab per kategori, dan tampilan 4 panel satu layar.
 
 ![Tab Ringkasan](docs/img/ringkasan.png)
@@ -135,6 +135,7 @@ dan seluruh alert aktif. Tombol ☀/☾ di kanan atas mengganti tema terang/gela
 | **Proxmox VE** | API token: Datacenter → Permissions → API Tokens → Add (hapus centang *Privilege Separation*), lalu beri role **PVEAuditor** di path `/`. Isi Token ID `user@pve!nama` + secret. Port 8006. | CPU, RAM, storage, jaringan, IO wait; daftar VM/CT, node & storage; alert node offline, VM berhenti, storage penuh |
 | **Proxmox Backup Server** | API token: Configuration → Access Control → API Token → Add, lalu Permissions → Add → **API Token Permission** path `/` role **Audit**. Isi Token ID `user@pbs!nama` + secret. Port 8007. Tampil di tab **Backup**. | CPU, RAM, datastore (% terisi & perkiraan penuh), backup terakhir tiap VM/CT, tugas 24 jam (backup, verifikasi, prune, GC, sync); alert backup gagal, VM/CT tidak dibackup > 26 jam, tugas gagal, datastore penuh |
 | **NAS Synology** | Akun khusus anggota grup **administrators**, **tanpa 2FA**. Port 5001 (https) / 5000 (http). | CPU, RAM, jaringan, volume & storage pool, disk (status, S.M.A.R.T., suhu); alert volume degraded/penuh, disk bermasalah/panas |
+| **NAS QNAP** (QTS / QuTS hero) | User khusus anggota grup **administrators**, **tanpa** verifikasi 2 langkah. Port 8080 (http) / 443 (https). Masukkan IP komputer Dashboard ke *Allow List* di **Network Access Protection**. | CPU, RAM, suhu sistem, jaringan, volume, disk (S.M.A.R.T., suhu), kipas, kesehatan sistem; alert sama dengan Synology + kipas rusak & sistem tidak *good* |
 | **Active Backup for Business** | Akun NAS yang sama (login dipakai bersama dengan panel NAS). | Semua tugas backup: hasil terakhir (sukses/sebagian/gagal/berjalan), waktu, durasi, data, perangkat offline; alert gagal & tidak backup > 26 jam |
 | **FortiGate** | REST API Admin: System → Administrators → Create New → **REST API Admin**, profil hanya-baca (termasuk **Log & Report: Read** untuk Peta Serangan), **Trusted Hosts** = IP komputer Dashboard. Isi API key. Port HTTPS admin (bawaan 443). VDOM opsional. | CPU, memory, sesi, trafik WAN, **latency/jitter/loss per ISP dari SD-WAN Performance SLA**, interface, tunnel IPsec, **🛡 Peta Serangan** (serangan masuk & perangkat kantor yang terinfeksi, dari log IPS/DoS/antivirus); alert link WAN putus, SLA tidak terpenuhi, VPN putus, serangan lolos, PC terinfeksi, CPU/memory tinggi |
 | **MikroTik** | RouterOS **v7.1+** (REST API). Aktifkan IP → Services → **www** (port 80) atau **www-ssl** (443), batasi *Available From* ke IP Dashboard, buat user grup **read**. | CPU, memory, suhu, trafik WAN, **jalur ISP aktif (default route) & failover**, Netwatch, interface, klien DHCP; alert WAN putus, failover, Netwatch down, suhu/CPU tinggi |
@@ -146,6 +147,8 @@ Catatan:
   (`data/isp.sqlite`). Bila ping diblokir, pilih metode **Cek port TCP** dengan port yang terbuka (mis. 443/53).
 - **Synology**: bila password salah, Dashboard Monitoring System menunggu 5 menit sebelum mencoba lagi agar IP komputer
   tidak diblokir fitur Auto Block DSM.
+- **QNAP**: login gagal → menunggu 5 menit sebelum mencoba lagi (agar tidak diblokir *Network Access Protection*). Pada sebagian
+  model QTS 4.5+/5 (storage pool baru), persentase isi volume tidak dilaporkan API → kolom % tampil `–`; status volume tetap dipantau.
 - **Active Backup for Business**: API-nya tidak didokumentasikan resmi oleh Synology; data dibaca mengikuti
   pustaka komunitas. Bila ada angka yang tidak sesuai, buka menu **⋯ → Lihat data mentah** pada panelnya,
   salin isinya, dan kirimkan untuk penyesuaian.

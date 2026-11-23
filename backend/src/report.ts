@@ -28,6 +28,7 @@ const ENGINE_LABEL: Record<string, string> = {
   proxmox: 'Proxmox VE',
   pbs: 'Proxmox Backup',
   synology: 'Synology NAS',
+  qnap: 'QNAP NAS',
   abb: 'Active Backup',
   isp: 'ISP',
   fortigate: 'FortiGate',
@@ -63,6 +64,14 @@ const DEVICE_KEYS: Record<string, Record<string, Def>> = {
     netTx: { label: 'Upload', unit: 'B/s' },
     diskRead: { label: 'Baca disk', unit: 'B/s' },
     diskWrite: { label: 'Tulis disk', unit: 'B/s' },
+  },
+  qnap: {
+    cpu: { label: 'CPU', unit: '%' },
+    mem: { label: 'Memory', unit: '%' },
+    volume: { label: 'Volume terpenuh', unit: '%' },
+    diskTemp: { label: 'Suhu disk', unit: '°C' },
+    netRx: { label: 'Download', unit: 'B/s' },
+    netTx: { label: 'Upload', unit: 'B/s' },
   },
   abb: {
     success: { label: 'Tugas sukses', unit: '' },

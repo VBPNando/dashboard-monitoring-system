@@ -54,7 +54,7 @@ export function Overview({ conns, status, alerts, live, devLive, devData, onOpen
   const isDb = (c: Connection) => ['mariadb', 'postgres', 'mssql', 'sqlite'].includes(c.engine);
   const groups = [
     { items: [...conns.filter(isDb), ...conns.filter((c) => c.engine === 'proxmox')], rows: 2 },
-    { items: [...conns.filter((c) => c.engine === 'synology'), ...conns.filter((c) => c.engine === 'abb'), ...conns.filter((c) => c.engine === 'pbs')], rows: 1 },
+    { items: [...conns.filter((c) => c.engine === 'synology' || c.engine === 'qnap'), ...conns.filter((c) => c.engine === 'abb'), ...conns.filter((c) => c.engine === 'pbs')], rows: 1 },
     { items: [...conns.filter((c) => c.engine === 'fortigate'), ...conns.filter((c) => c.engine === 'mikrotik')], rows: 1 },
     { items: conns.filter((c) => c.engine === 'isp'), rows: 1 },
   ].filter((g) => g.items.length);
@@ -80,6 +80,7 @@ export function Overview({ conns, status, alerts, live, devLive, devData, onOpen
       case 'proxmox':
         return <ProxmoxTile key={c.id} {...props} points={pts} d={d?.data as ProxmoxData | undefined} />;
       case 'synology':
+      case 'qnap':
         return <NasTile key={c.id} {...props} points={pts} d={d?.data as NasData | undefined} />;
       case 'abb':
         return <AbbTile key={c.id} {...props} d={d?.data as AbbData | undefined} />;

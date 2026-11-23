@@ -202,6 +202,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       case 'proxmox':
         return <ProxmoxPanel key={c.id} {...(common as DevicePanelProps<ProxmoxData>)} />;
       case 'synology':
+      case 'qnap':
         return <NasPanel key={c.id} {...(common as DevicePanelProps<NasData>)} />;
       case 'pbs':
         return <PbsPanel key={c.id} {...(common as DevicePanelProps<PbsData>)} />;

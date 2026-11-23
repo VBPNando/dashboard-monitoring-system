@@ -69,7 +69,7 @@ const PbsConn = z.object({
     .default({}),
 });
 const SynologyConn = z.object({
-  engine: z.enum(['synology', 'abb']),
+  engine: z.enum(['synology', 'qnap', 'abb']),
   name,
   host,
   port: port.optional(),
@@ -162,6 +162,7 @@ function prepare(body: unknown): Prepared | string {
       return { type: 'db', input: { ...input, database: input.database || undefined } };
     case 'proxmox':
     case 'synology':
+    case 'qnap':
     case 'abb':
     case 'mikrotik': {
       const { engine, ...rest } = input;

@@ -1,5 +1,5 @@
 /** Jenis sumber selain database. Database tetap memakai collectors/ (engine mariadb/postgres/mssql/sqlite). */
-export type DeviceKind = 'proxmox' | 'pbs' | 'synology' | 'abb' | 'isp' | 'fortigate' | 'mikrotik';
+export type DeviceKind = 'proxmox' | 'pbs' | 'synology' | 'qnap' | 'abb' | 'isp' | 'fortigate' | 'mikrotik';
 
 /** Pengaturan tambahan per jenis (disimpan terenkripsi bersama koneksi). */
 export interface DeviceOptions {

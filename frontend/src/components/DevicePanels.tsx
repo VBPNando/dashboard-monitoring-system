@@ -225,7 +225,7 @@ export function NasPanel({ conn, live, points, isLive, data, status, alerts, fil
                       <span className="truncate font-medium text-slate-800">{x.name}</span>
                       <Pill ok={OK.has(x.status)} warn={!/crash|degrad|fail/.test(x.status)}>{x.status || 'normal'}</Pill>
                       <UsageBar pct={x.pct} />
-                      <span className="tabular text-right font-semibold text-slate-800">{fmtNum(x.pct)}%</span>
+                      <span className="tabular text-right font-semibold text-slate-800">{x.pct == null ? '–' : `${fmtNum(x.pct)}%`}</span>
                     </Row>
                   ))}
                   {data.pools.map((p) => (

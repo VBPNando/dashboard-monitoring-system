@@ -21,15 +21,15 @@ export class HttpError extends Error {
 }
 
 /**
- * Permintaan HTTP(S) yang mengembalikan JSON.
+ * Permintaan HTTP(S) yang mengembalikan teks (mis. XML QNAP).
  * Memakai modul bawaan Node (bukan fetch) agar bisa menerima sertifikat self-signed
  * per permintaan, tanpa mematikan verifikasi TLS untuk seluruh aplikasi.
  */
-export function requestJson<T = unknown>(url: string, opts: HttpOptions = {}): Promise<T> {
+export function requestText(url: string, opts: HttpOptions = {}): Promise<string> {
   const u = new URL(url);
   const isHttps = u.protocol === 'https:';
   const body = opts.form ? new URLSearchParams(opts.form).toString() : undefined;
-  const headers: Record<string, string> = { Accept: 'application/json', ...opts.headers };
+  const headers: Record<string, string> = { ...opts.headers };
   if (body) {
     headers['Content-Type'] = 'application/x-www-form-urlencoded';
     headers['Content-Length'] = String(Buffer.byteLength(body));
@@ -52,11 +52,7 @@ export function requestJson<T = unknown>(url: string, opts: HttpOptions = {}): P
           if (status === 401) return reject(new HttpError('Autentikasi ditolak (401): periksa user/token', status));
           if (status === 403) return reject(new HttpError('Akses ditolak (403): hak akses kurang', status));
           if (status >= 400) return reject(new HttpError(`HTTP ${status}: ${text.slice(0, 200)}`, status));
-          try {
-            resolve(JSON.parse(text) as T);
-          } catch {
-            reject(new HttpError(`Respons bukan JSON (HTTP ${status})`, status));
-          }
+          resolve(text);
         });
       },
     );
@@ -65,6 +61,16 @@ export function requestJson<T = unknown>(url: string, opts: HttpOptions = {}): P
     if (body) req.write(body);
     req.end();
   });
+}
+
+/** Permintaan HTTP(S) yang mengembalikan JSON. */
+export async function requestJson<T = unknown>(url: string, opts: HttpOptions = {}): Promise<T> {
+  const text = await requestText(url, { ...opts, headers: { Accept: 'application/json', ...opts.headers } });
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new HttpError('Respons bukan JSON');
+  }
 }
 
 export function netMessage(e: NodeJS.ErrnoException): string {

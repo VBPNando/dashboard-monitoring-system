@@ -11,7 +11,7 @@ interface Props {
 
 const GROUPS: { label: string; items: Engine[] }[] = [
   { label: 'Database', items: ['mariadb', 'postgres', 'mssql', 'sqlite'] },
-  { label: 'Server & Storage', items: ['proxmox', 'pbs', 'synology', 'abb'] },
+  { label: 'Server & Storage', items: ['proxmox', 'pbs', 'synology', 'qnap', 'abb'] },
   { label: 'Jaringan', items: ['fortigate', 'mikrotik', 'isp'] },
 ];
 
@@ -54,6 +54,13 @@ const HELP: Partial<Record<Engine, ReactNode>> = {
     <>
       Gunakan akun khusus monitoring anggota grup <b>administrators</b> <u>tanpa</u> verifikasi 2 langkah (2FA). Port bawaan DSM: 5001
       (https) atau 5000 (http).
+    </>
+  ),
+  qnap: (
+    <>
+      QTS / QuTS hero: buat user khusus monitoring di <b>Control Panel → Users</b>, anggota grup <b>administrators</b>, <u>tanpa</u> verifikasi
+      2 langkah. Port bawaan 8080 (http) atau 443 (https, centang HTTPS). Tambahkan IP komputer Dashboard ke <b>Allow List</b> di
+      <i>Network Access Protection</i> agar tidak terblokir.
     </>
   ),
   abb: (
@@ -121,7 +128,7 @@ export function ConnectionForm({ onCreated, onClose, initial = 'mariadb' }: Prop
   const changeEngine = (e: Engine) => {
     setEngine(e);
     setMsg(null);
-    setForm((f) => ({ ...f, port: String(ENGINE_META[e].port ?? ''), https: e !== 'mikrotik' }));
+    setForm((f) => ({ ...f, port: String(ENGINE_META[e].port ?? ''), https: e !== 'mikrotik' && e !== 'qnap' }));
   };
 
   const payload = () => {
@@ -150,6 +157,7 @@ export function ConnectionForm({ onCreated, onClose, initial = 'mariadb' }: Prop
           options: { https: form.https, staleHours: Number(form.staleHours) || 26 },
         };
       case 'synology':
+      case 'qnap':
       case 'abb':
         return {
           engine,
@@ -249,7 +257,7 @@ export function ConnectionForm({ onCreated, onClose, initial = 'mariadb' }: Prop
     'w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10';
   const label = 'mb-1 block text-xs font-medium text-slate-500';
   const isDb = ['mariadb', 'postgres', 'mssql'].includes(engine);
-  const needsLogin = isDb || engine === 'proxmox' || engine === 'synology' || engine === 'abb' || engine === 'mikrotik' || engine === 'pbs';
+  const needsLogin = isDb || engine === 'proxmox' || engine === 'synology' || engine === 'qnap' || engine === 'abb' || engine === 'mikrotik' || engine === 'pbs';
 
   return (
     <div className="fade-in fixed inset-0 z-50 flex items-end bg-black/40 backdrop-blur-sm sm:items-center sm:justify-center" onClick={onClose}>
@@ -402,7 +410,7 @@ export function ConnectionForm({ onCreated, onClose, initial = 'mariadb' }: Prop
                   <input type="checkbox" checked={form.https} onChange={(e) => {
                       const on = e.target.checked;
                       // MikroTik: www (80) ↔ www-ssl (443)
-                      setForm((f) => ({ ...f, https: on, port: engine === 'mikrotik' && (f.port === '80' || f.port === '443' || !f.port) ? (on ? '443' : '80') : f.port }));
+                      setForm((f) => ({ ...f, https: on, port: engine === 'mikrotik' && (f.port === '80' || f.port === '443' || !f.port) ? (on ? '443' : '80') : engine === 'qnap' && (f.port === '8080' || f.port === '443' || !f.port) ? (on ? '443' : '8080') : f.port }));
                     }} className="h-4 w-4 accent-sky-600" />
                   Pakai HTTPS (sertifikat self-signed diterima){engine === 'mikrotik' ? ' · www-ssl, port 443' : ''}
                 </label>

@@ -1,8 +1,8 @@
 export type DbEngine = 'mariadb' | 'postgres' | 'mssql' | 'sqlite';
-export type DeviceKind = 'proxmox' | 'pbs' | 'synology' | 'abb' | 'isp' | 'fortigate' | 'mikrotik';
+export type DeviceKind = 'proxmox' | 'pbs' | 'synology' | 'qnap' | 'abb' | 'isp' | 'fortigate' | 'mikrotik';
 /** Jenis sumber: database (4 engine) atau perangkat */
 export type Engine = DbEngine | DeviceKind;
-const DEVICE_KINDS: readonly string[] = ['proxmox', 'pbs', 'synology', 'abb', 'isp', 'fortigate', 'mikrotik'];
+const DEVICE_KINDS: readonly string[] = ['proxmox', 'pbs', 'synology', 'qnap', 'abb', 'isp', 'fortigate', 'mikrotik'];
 export const isDevice = (e: Engine): e is DeviceKind => DEVICE_KINDS.includes(e);
 
 export interface DeviceOptions {
@@ -172,6 +172,7 @@ export const ENGINE_META: Record<Engine, { label: string; port?: number; color: 
   proxmox: { label: 'Proxmox VE', port: 8006, color: 'bg-amber-50 text-amber-800 ring-1 ring-amber-200' },
   pbs: { label: 'Proxmox Backup', port: 8007, color: 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200' },
   synology: { label: 'Synology NAS', port: 5001, color: 'bg-sky-50 text-sky-800 ring-1 ring-sky-200' },
+  qnap: { label: 'QNAP NAS', port: 8080, color: 'bg-indigo-50 text-indigo-800 ring-1 ring-indigo-200' },
   abb: { label: 'Active Backup', port: 5001, color: 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200' },
   isp: { label: 'ISP', color: 'bg-rose-50 text-rose-800 ring-1 ring-rose-200' },
   fortigate: { label: 'FortiGate', port: 443, color: 'bg-rose-50 text-rose-800 ring-1 ring-rose-200' },
@@ -180,8 +181,8 @@ export const ENGINE_META: Record<Engine, { label: string; port?: number; color: 
 
 /** Tab kategori */
 export type Category = 'database' | 'proxmox' | 'synology' | 'abb' | 'fortigate' | 'mikrotik' | 'isp';
-/** Proxmox Backup Server ikut tab Backup bersama Active Backup */
-export const categoryOf = (e: Engine): Category => (e === 'pbs' ? 'abb' : isDevice(e) ? e : 'database');
+/** Proxmox Backup Server ikut tab Backup bersama Active Backup; QNAP ikut tab NAS */
+export const categoryOf = (e: Engine): Category => (e === 'pbs' ? 'abb' : e === 'qnap' ? 'synology' : isDevice(e) ? e : 'database');
 export const CATEGORIES: { key: Category; label: string; icon: string }[] = [
   { key: 'database', label: 'Database', icon: '🗄' },
   { key: 'proxmox', label: 'Proxmox', icon: '🖥' },
