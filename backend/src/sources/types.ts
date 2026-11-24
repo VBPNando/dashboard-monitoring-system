@@ -1,5 +1,5 @@
 /** Jenis sumber selain database. Database tetap memakai collectors/ (engine mariadb/postgres/mssql/sqlite). */
-export type DeviceKind = 'proxmox' | 'pbs' | 'synology' | 'qnap' | 'abb' | 'isp' | 'fortigate' | 'mikrotik';
+export type DeviceKind = 'proxmox' | 'pbs' | 'synology' | 'qnap' | 'qnapbackup' | 'abb' | 'isp' | 'fortigate' | 'mikrotik';
 
 /** Pengaturan tambahan per jenis (disimpan terenkripsi bersama koneksi). */
 export interface DeviceOptions {
@@ -16,6 +16,8 @@ export interface DeviceOptions {
   latencyWarnMs?: number;
   /** ABB / PBS: alert bila tidak ada backup sukses lebih dari sekian jam */
   staleHours?: number;
+  /** QNAP Backup: folder bersama tujuan NetBak Replicator (dipantau dari access log) */
+  netbakFolder?: string;
   /** FortiGate: VDOM (kosong = root/bawaan) */
   vdom?: string;
   /** FortiGate: tampilkan Peta Serangan dari log IPS/DoS/antivirus (bawaan true) */

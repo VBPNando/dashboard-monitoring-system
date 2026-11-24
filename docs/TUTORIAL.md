@@ -126,6 +126,7 @@ Selalu gunakan **akun khusus monitoring yang hanya-baca**.
 | **Proxmox Backup Server** | API Token + **API Token Permission** role **Audit** di `/`. Token ID `user@pbs!nama`. Port 8007 |
 | **NAS Synology / Active Backup** | Akun grup administrators **tanpa 2FA**. Port 5001 |
 | **NAS QNAP** | User grup administrators **tanpa 2 langkah**. Port 8080 (http) / 443 (https) |
+| **QNAP Backup** (HBS 3 / HDP / NetBak) | Tanpa akun. QuLog Center → Log Sender → Send to Syslog Server → IP Dashboard, port 514, RFC-3164 |
 | **FortiGate** | REST API Admin, profil read-only (+ **Log & Report: Read** untuk Peta Serangan), **PKI Group dimatikan**, Trusted Hosts = subnet dashboard. Isi API key |
 | **MikroTik** | RouterOS **v7.1+**, aktifkan service `www`, user grup `read`. Beri *comment* pada default route tiap ISP |
 | **ISP / SLA** | IP yang di-ping per ISP. Dua ISP di belakang firewall → target berbeda + Policy Route per ISP |

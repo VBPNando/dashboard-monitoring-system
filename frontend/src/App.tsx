@@ -207,6 +207,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       case 'pbs':
         return <PbsPanel key={c.id} {...(common as DevicePanelProps<PbsData>)} />;
       case 'abb':
+      case 'qnapbackup':
         return <AbbPanel key={c.id} {...(common as DevicePanelProps<AbbData>)} />;
       case 'isp':
         return <IspPanel key={c.id} {...(common as DevicePanelProps<IspData>)} />;

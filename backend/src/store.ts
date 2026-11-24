@@ -9,7 +9,7 @@ import type { DeviceConfig, DeviceKind, DeviceOptions } from './sources/types.js
 /**
  * Penyimpanan konfigurasi (data/dbmon.sqlite). Satu tabel untuk semua sumber:
  *  - engine mariadb/postgres/mssql/sqlite → database
- *  - engine proxmox/pbs/synology/qnap/abb/isp/fortigate/mikrotik → perangkat (pengaturan tambahan di options_json)
+ *  - engine proxmox/pbs/synology/qnap/qnapbackup/abb/isp/fortigate/mikrotik → perangkat (pengaturan tambahan di options_json)
  * Password / secret token selalu terenkripsi AES-256-GCM.
  */
 const db = new DatabaseSync(join(DATA_DIR, 'dbmon.sqlite'));

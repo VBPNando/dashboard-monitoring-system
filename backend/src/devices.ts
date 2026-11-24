@@ -5,6 +5,7 @@ import type { DevicePoint } from './deviceHistory.js';
 import { ProxmoxSource } from './sources/proxmox.js';
 import { SynologySource } from './sources/synology.js';
 import { QnapSource } from './sources/qnap.js';
+import { QnapBackupSource } from './sources/qnapBackup.js';
 import { AbbSource } from './sources/abb.js';
 import { IspSource } from './sources/isp.js';
 import { FortiGateSource } from './sources/fortigate.js';
@@ -22,6 +23,8 @@ export function createSource(cfg: DeviceConfig): DeviceSource {
       return new SynologySource(cfg);
     case 'qnap':
       return new QnapSource(cfg);
+    case 'qnapbackup':
+      return new QnapBackupSource(cfg);
     case 'abb':
       return new AbbSource(cfg);
     case 'isp':
@@ -35,7 +38,7 @@ export function createSource(cfg: DeviceConfig): DeviceSource {
   }
 }
 
-export const DEVICE_KINDS: DeviceKind[] = ['proxmox', 'pbs', 'synology', 'qnap', 'abb', 'isp', 'fortigate', 'mikrotik'];
+export const DEVICE_KINDS: DeviceKind[] = ['proxmox', 'pbs', 'synology', 'qnap', 'qnapbackup', 'abb', 'isp', 'fortigate', 'mikrotik'];
 
 type Status = 'connecting' | 'up' | 'error';
 

@@ -293,11 +293,18 @@ export function AbbPanel({ conn, data, status, alerts, fill, menu }: DevicePanel
   const failed = count('failed');
   const partial = count('partial');
   const running = count('running');
+  const src = data?.logSource;
+  const isQnap = conn.engine === 'qnapbackup';
+  const ev = data?.events ?? [];
 
   return (
     <PanelFrame
       conn={conn}
-      subtitle={`${conn.host} · diperbarui tiap menit`}
+      subtitle={
+        isQnap
+          ? `${conn.host} · log masuk lewat syslog port ${src?.port ?? 514}${src?.lastLog ? ` · terakhir ${fmtAgo(src.lastLog)}` : ''}`
+          : `${conn.host} · diperbarui tiap menit`
+      }
       status={status}
       alerts={alerts}
       fill={fill}
@@ -305,12 +312,12 @@ export function AbbPanel({ conn, data, status, alerts, fill, menu }: DevicePanel
       layout="list"
       kpis={
         <KpiRow>
-          <Kpi index={1} label="Total Tugas" value={data?.total} color="s1" hint={data ? `${data.devicesOnline}/${data.devicesTotal} perangkat online` : undefined} />
+          <Kpi index={1} label="Total Tugas" value={data?.total} color="s1" hint={data && data.devicesTotal ? `${data.devicesOnline}/${data.devicesTotal} ${isQnap ? 'PC NetBak aktif' : 'perangkat online'}` : undefined} />
           <Kpi index={2} label="Sukses" value={data ? ok : null} color="s3" />
           <Kpi index={3} label="Gagal" value={data ? failed : null} color="s1" level={failed ? 'critical' : 'ok'} />
           <Kpi index={4} label="Sebagian" value={data ? partial : null} color="s1" level={partial ? 'warning' : 'ok'} />
           <Kpi index={5} label="Berjalan" value={data ? running : null} color="s1" />
-          <Kpi index={6} label="Backup Terakhir" text={data?.lastEnd ? fmtAgo(data.lastEnd) : '—'} color="s1" hint={data ? `Data terkirim 24 jam: ${fmtBytes(data.bytes24h)}` : undefined} />
+          <Kpi index={6} label="Backup Terakhir" text={data?.lastEnd ? fmtAgo(data.lastEnd) : '—'} color="s1" hint={data && !isQnap ? `Data terkirim 24 jam: ${fmtBytes(data.bytes24h)}` : undefined} />
         </KpiRow>
       }
       lists={[
@@ -320,7 +327,17 @@ export function AbbPanel({ conn, data, status, alerts, fill, menu }: DevicePanel
           weight: 1.9,
           render: (e) => (
             <Box title="Tugas Backup" sub="Urut: gagal → sebagian → berjalan → sukses" embedded={e}>
-              {!data ? <Empty text="Memuat…" /> : !t.length ? <Empty text="Belum ada tugas backup" /> : (
+              {!data ? <Empty text="Memuat…" /> : src?.error ? <Empty text={src.error} /> : !t.length ? (
+                <Empty
+                  text={
+                    isQnap
+                      ? src?.lastLog
+                        ? 'Log dari NAS sudah masuk, tetapi belum ada tugas backup yang mulai/selesai sejak itu. Status muncul setelah tugas berikutnya berjalan.'
+                        : `Belum ada log dari ${conn.host}. Di QNAP: QuLog Center → Log Sender → Send to Syslog Server → tambahkan IP komputer Dashboard, port ${src?.port ?? 514}, format RFC-3164.`
+                      : 'Belum ada tugas backup'
+                  }
+                />
+              ) : (
                 <ul className="space-y-px">
                   <li className="grid grid-cols-[minmax(0,1.4fr)_5.5rem_minmax(0,1fr)_4.6rem_4.2rem] gap-2 px-2 pb-0.5 text-[10px] font-medium tracking-wide text-slate-400 uppercase">
                     <span>Tugas</span>
@@ -336,12 +353,15 @@ export function AbbPanel({ conn, data, status, alerts, fill, menu }: DevicePanel
                       <Row
                         key={x.id}
                         cols="minmax(0,1.4fr) 5.5rem minmax(0,1fr) 4.6rem 4.2rem"
-                        title={`${x.name} (${x.type})\nPerangkat: ${x.devices.map((d) => `${d.name}${d.online ? '' : ' [offline]'}`).join(', ') || '-'}\nMulai ${fmtWhen(x.start)} · selesai ${fmtWhen(x.end)}\nBerikutnya ${fmtWhen(x.next)}${x.counts ? `\nSukses ${x.counts.ok} · peringatan ${x.counts.warn} · error ${x.counts.err}` : ''}`}
+                        title={`${x.name} (${x.type})\nPerangkat: ${x.devices.map((d) => `${d.name}${d.online ? '' : ' [offline]'}`).join(', ') || '-'}\nMulai ${fmtWhen(x.start)} · selesai ${fmtWhen(x.end)}${x.next ? `\nBerikutnya ${fmtWhen(x.next)}` : ''}${x.note ? `\n${x.note}` : ''}${x.counts ? `\nSukses ${x.counts.ok} · peringatan ${x.counts.warn} · error ${x.counts.err}` : ''}`}
                       >
                         <span className="min-w-0">
                           <span className="block truncate font-medium text-slate-800">{x.name}</span>
                           <span className="block truncate text-[10px] text-slate-400">
-                            {x.type} · {x.deviceCount} perangkat{offline ? <span style={{ color: STATUS.warning }}> · {offline} offline</span> : null}
+                            {x.type}
+                            {x.deviceCount && !isQnap ? ` · ${x.deviceCount} perangkat` : ''}
+                            {x.note && x.result !== 'success' ? <span style={{ color: RESULT_UI[x.result].color }}> · {x.note}</span> : null}
+                            {offline && !isQnap ? <span style={{ color: STATUS.warning }}> · {offline} offline</span> : null}
                           </span>
                         </span>
                         <span className="inline-flex items-center gap-1 text-[11px] font-semibold" style={{ color: ui.color }}>
@@ -360,6 +380,34 @@ export function AbbPanel({ conn, data, status, alerts, fill, menu }: DevicePanel
             </Box>
           ),
         },
+        ...(isQnap
+          ? [
+              {
+                key: 'log',
+                label: 'Log',
+                weight: 1.2,
+                render: (e: boolean) => (
+                  <Box title="Log Backup Terbaru" sub="Dari QuLog Center NAS" embedded={e}>
+                    {!ev.length ? <Empty text="Belum ada log backup" /> : (
+                      <ul className="space-y-px">
+                        {ev.map((x, k) => {
+                          const ui = RESULT_UI[({ success: 'success', warning: 'partial', failed: 'failed', stopped: 'canceled', running: 'running' } as Record<string, BackupResult>)[x.status] ?? 'unknown'];
+                          return (
+                            <Row key={k} cols="4.2rem minmax(0,1fr)" title={`${fmtWhen(x.ts)} · ${x.app}\n${x.message}`}>
+                              <span className="tabular text-[11px] text-slate-500">{fmtAgo(x.ts).replace(' lalu', '')}</span>
+                              <span className="truncate text-slate-700">
+                                <span style={{ color: ui.color }}>{ui.icon}</span> <span className="text-[10px] text-slate-400">{x.app}</span> {x.message}
+                              </span>
+                            </Row>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </Box>
+                ),
+              } as ListDef,
+            ]
+          : []),
         alertsList(alerts),
       ]}
     />

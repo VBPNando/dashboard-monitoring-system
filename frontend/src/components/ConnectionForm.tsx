@@ -11,7 +11,7 @@ interface Props {
 
 const GROUPS: { label: string; items: Engine[] }[] = [
   { label: 'Database', items: ['mariadb', 'postgres', 'mssql', 'sqlite'] },
-  { label: 'Server & Storage', items: ['proxmox', 'pbs', 'synology', 'qnap', 'abb'] },
+  { label: 'Server & Storage', items: ['proxmox', 'pbs', 'synology', 'qnap', 'abb', 'qnapbackup'] },
   { label: 'Jaringan', items: ['fortigate', 'mikrotik', 'isp'] },
 ];
 
@@ -61,6 +61,14 @@ const HELP: Partial<Record<Engine, ReactNode>> = {
       QTS / QuTS hero: buat user khusus monitoring di <b>Control Panel → Users</b>, anggota grup <b>administrators</b>, <u>tanpa</u> verifikasi
       2 langkah. Port bawaan 8080 (http) atau 443 (https, centang HTTPS). Tambahkan IP komputer Dashboard ke <b>Allow List</b> di
       <i>Network Access Protection</i> agar tidak terblokir.
+    </>
+  ),
+  qnapbackup: (
+    <>
+      Memantau <b>HBS 3</b>, <b>Hyper Data Protector</b> &amp; <b>NetBak Replicator</b> dari log NAS (ketiganya tidak punya API). Di QNAP buka{' '}
+      <b>QuLog Center → QuLog Service → Log Sender → Send to Syslog Server</b>: aktifkan, <i>Add Destination</i> = IP komputer Dashboard, port{' '}
+      <b>514</b>, UDP, format <b>RFC-3164</b>, jenis log <b>Event</b> (tambah <b>Access</b> bila memantau NetBak). Untuk NetBak, aktifkan juga{' '}
+      <b>Log Settings → Access Log Settings → Connection Types → SMB</b>, lalu isi nama folder tujuan NetBak di bawah.
     </>
   ),
   abb: (
@@ -114,6 +122,7 @@ export function ConnectionForm({ onCreated, onClose, initial = 'mariadb' }: Prop
     tcpPort: '443',
     latencyWarnMs: '100',
     staleHours: '26',
+    netbakFolder: '',
     vdom: '',
     threats: true,
     site: 'Jakarta',
@@ -198,6 +207,13 @@ export function ConnectionForm({ onCreated, onClose, initial = 'mariadb' }: Prop
           username: form.username,
           password: form.password,
           options: { https: form.https },
+        };
+      case 'qnapbackup':
+        return {
+          engine,
+          name,
+          host: form.host,
+          options: { staleHours: Number(form.staleHours) || 26, netbakFolder: form.netbakFolder.trim() || undefined },
         };
       case 'isp':
         return {
@@ -336,6 +352,20 @@ export function ConnectionForm({ onCreated, onClose, initial = 'mariadb' }: Prop
                     <input className={input} value={form.tcpPort} onChange={set('tcpPort')} inputMode="numeric" />
                   </label>
                 )}
+              </div>
+            </>
+          ) : engine === 'qnapbackup' ? (
+            <>
+              <input className={input} placeholder="IP NAS QNAP (pengirim log)" value={form.host} onChange={set('host')} autoCapitalize="off" autoCorrect="off" spellCheck={false} required />
+              <div className="grid grid-cols-2 gap-2">
+                <label>
+                  <span className={label}>Alert bila tidak backup lebih dari (jam)</span>
+                  <input className={input} value={form.staleHours} onChange={set('staleHours')} inputMode="numeric" />
+                </label>
+                <label>
+                  <span className={label}>Folder tujuan NetBak (opsional)</span>
+                  <input className={input} placeholder="mis. NetBak" value={form.netbakFolder} onChange={set('netbakFolder')} autoCapitalize="off" spellCheck={false} />
+                </label>
               </div>
             </>
           ) : (

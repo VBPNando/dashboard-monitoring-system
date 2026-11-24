@@ -60,6 +60,13 @@ switch ($Action) {
       if (-not (Get-NetFirewallRule -DisplayName $rule -ErrorAction SilentlyContinue)) {
         New-NetFirewallRule -DisplayName $rule -Direction Inbound -Action Allow -Protocol TCP -LocalPort $Port | Out-Null
       }
+      # Penerima log backup QNAP (syslog). Log dari host yang tidak didaftarkan diabaikan aplikasi.
+      foreach ($proto in 'UDP', 'TCP') {
+        $sl = "$Name (Syslog $proto 514)"
+        if (-not (Get-NetFirewallRule -DisplayName $sl -ErrorAction SilentlyContinue)) {
+          New-NetFirewallRule -DisplayName $sl -Direction Inbound -Action Allow -Protocol $proto -LocalPort 514 | Out-Null
+        }
+      }
     }
     Start-ScheduledTask -TaskName $Name
     Write-Host '  Menunggu proses menyala...'

@@ -29,6 +29,7 @@ const ENGINE_LABEL: Record<string, string> = {
   pbs: 'Proxmox Backup',
   synology: 'Synology NAS',
   qnap: 'QNAP NAS',
+  qnapbackup: 'QNAP Backup',
   abb: 'Active Backup',
   isp: 'ISP',
   fortigate: 'FortiGate',
@@ -74,6 +75,12 @@ const DEVICE_KEYS: Record<string, Record<string, Def>> = {
     netTx: { label: 'Upload', unit: 'B/s' },
   },
   abb: {
+    success: { label: 'Tugas sukses', unit: '' },
+    failed: { label: 'Tugas gagal', unit: '' },
+    partial: { label: 'Tugas sebagian', unit: '' },
+    running: { label: 'Tugas berjalan', unit: '' },
+  },
+  qnapbackup: {
     success: { label: 'Tugas sukses', unit: '' },
     failed: { label: 'Tugas gagal', unit: '' },
     partial: { label: 'Tugas sebagian', unit: '' },

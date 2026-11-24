@@ -96,6 +96,18 @@ const IspConn = z.object({
     .optional()
     .default({}),
 });
+const QnapBackupConn = z.object({
+  engine: z.literal('qnapbackup'),
+  name,
+  host,
+  options: z
+    .object({
+      staleHours: z.coerce.number().min(1).max(24 * 30).optional(),
+      netbakFolder: z.string().trim().max(100).regex(/^[^\\:*?"<>|]*$/, 'nama folder tidak valid').optional(),
+    })
+    .optional()
+    .default({}),
+});
 const FortiConn = z.object({
   engine: z.literal('fortigate'),
   name,
@@ -125,7 +137,7 @@ const MikrotikConn = z.object({
   password: z.string().max(512),
   options: z.object({ https: z.boolean().optional().default(false) }).optional().default({}),
 });
-const ConnInput = z.discriminatedUnion('engine', [ServerConn, SqliteConn, ProxmoxConn, PbsConn, SynologyConn, IspConn, FortiConn, MikrotikConn]);
+const ConnInput = z.discriminatedUnion('engine', [ServerConn, SqliteConn, ProxmoxConn, PbsConn, SynologyConn, IspConn, QnapBackupConn, FortiConn, MikrotikConn]);
 
 function hostAllowed(host: string) {
   if (!cfg.ALLOWED_HOSTS.length) return true;
@@ -173,6 +185,10 @@ function prepare(body: unknown): Prepared | string {
       return { type: 'device', input: { ...rest, kind: engine, options: rest.options } };
     }
     case 'fortigate': {
+      const { engine, ...rest } = input;
+      return { type: 'device', input: { ...rest, kind: engine, options: rest.options } };
+    }
+    case 'qnapbackup': {
       const { engine, ...rest } = input;
       return { type: 'device', input: { ...rest, kind: engine, options: rest.options } };
     }
